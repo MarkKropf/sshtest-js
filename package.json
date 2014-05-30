@@ -1,0 +1,17 @@
+{
+  "name": "sshtest",
+  "description": "Test SSH connections",
+  "version": "0.0.1-1",
+  "author": "Mark Kropf",
+  "private": true,
+  "engines": {
+    "node": "0.10.28"
+  },
+  "dependencies": {
+    "ssh2": "*"
+  },
+  "subdomain": "sshtest",
+  "scripts": {
+    "start": "node sshtest.js"
+  }
+}
