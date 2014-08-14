@@ -4,7 +4,11 @@ var url = require('url');
 var datar = "";
 
 var c = new Connection();
-var server = http.createServer().listen(process.env.PORT, process.env.VCAP_APP_HOST);
+if (process.env.PORT === undefined) {
+  var server = http.createServer().listen(3000, '0.0.0.0');
+} else {
+  var server = http.createServer().listen(process.env.PORT, process.env.VCAP_APP_HOST);
+}
 
 c.on('ready', function() {
   datar += 'Connection :: ready\n';
@@ -22,15 +26,10 @@ c.on('close', function(had_error) {
   datar += 'Connection :: close\n';
   console.log('Connection :: close');
 });
-c.connect({
-  host: 'os.sparkhosting.com',
-  port: 22,
-  username: 'frylock',
-  password: 'nodejsrules'
-});
 
 server.on('request', function(req, res) {
 	var url_parts = url.parse(req.url, true);
+  var query = require('url').parse(req.url,true).query;
 	var method = req.method;
 	var remoteAddress = req.connection.remoteAddress;
 	var body = '';
@@ -38,13 +37,19 @@ server.on('request', function(req, res) {
 	switch(url_parts.pathname) {
 		case '/':
 		case '/index.html':
-      var queryData = url.parse(req.url, true).query;
-      c.end();
-      if (queryData.user && queryData.pass) {
-        c.connect({host: 'os.sparkhosting.com', port: 22, username: queryData.user, password: queryData.pass });
+      if (query.host === undefined) {
+        body = 'Please provide a host & port value in the query string';
+      } else {
+        var host = query.host;
+        if (query.port === undefined) {
+          var port = 22;
+        } else {
+          var port = query.port;
+        }
+        c.connect({host: host, port: port, username: 'test', password: 'test' });
+        body = '{"message": "Welcome to SSHTest",\n"host": ' + host + ',\n"port": ' + port + ',\n"method": ' + method + ',\n"datar": \n"' + datar + '"}';
+        datar = "";
       }
-			body = '{"message": "Welcome to SSHTest",\n"method": ' + method + ',\n"datar": \n"' + datar + '"}';
-      datar = "";
 			response_end();
 			break;
 		default:
@@ -60,22 +65,3 @@ server.on('request', function(req, res) {
 		res.end();
 	}
 });
-
-// example output:
-// Connection :: connect
-// Connection :: ready
-// TCP :: DATA: HTTP/1.1 200 OK
-// Date: Thu, 15 Nov 2012 13:52:58 GMT
-// Server: Apache/2.2.22 (Ubuntu)
-// X-Powered-By: PHP/5.4.6-1ubuntu1
-// Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT
-// Content-Encoding: gzip
-// Vary: Accept-Encoding
-// Connection: close
-// Content-Type: text/html; charset=UTF-8
-//
-//
-// TCP :: EOF
-// TCP :: CLOSED
-// Connection :: end
-// Connection :: close
